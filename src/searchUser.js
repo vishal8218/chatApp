@@ -12,6 +12,7 @@ const SearchUser = ({ senderEmail }) => {
   const [openchatPage, setOpenChat] = useState(false);
   const [openchathis,setOpenCH]=useState(false);
   const[reciverName,setReciverName]=useState();
+  const[recid,setRecid]=useState();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -97,8 +98,22 @@ const SearchUser = ({ senderEmail }) => {
 
 
   }
-  const openchathistory =(key,value)=>{
+  const openchathistory =async(key,value)=>{
+    const response = await axios.post(baseUrl + "get_senderId"
+      ,
+      {
+        email: senderEmail
+      },
+      {
+        headers:
+        {
+          Authorization: token
+        }
+      }
+
+    )
     setId(key);
+    setRecid(response.data.UserId)
     setName(value)
     if(openchathis)
     {
@@ -160,7 +175,7 @@ const SearchUser = ({ senderEmail }) => {
         )}
       </div>
       {openchatPage && <MessageSend senderid={senderid} reciverid={reciverid} name={reciverName} />}
-      {openchathis && <ChatHistory id={id} name={name} />}
+      {openchathis && <ChatHistory id={id} recid={recid} name={name} />}
     </div>
   )
 

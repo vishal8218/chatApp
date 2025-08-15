@@ -2,17 +2,22 @@ import { useEffect, useState } from "react";
 import { useAppContext } from "./AppContext";
 import axios from "axios";
 
-const ChatHistory = ({ id, name }) => {
+const ChatHistory = ({ id, recid,name }) => {
   const token = localStorage.getItem("token");
   const { baseUrl } = useAppContext();
   const [data, setData] = useState([]);
+ 
 
   useEffect(() => {
     const getMessages = async () => {
       try {
         const response = await axios.post(
           baseUrl + "get_messages",
-          { id },
+          { 
+            reciverId:id,
+
+            senderId:recid
+           },
           { headers: { Authorization: token } }
         );
 
@@ -33,7 +38,7 @@ const ChatHistory = ({ id, name }) => {
     };
 
     getMessages();
-  }, [baseUrl, id, token]);
+  }, [baseUrl, id, token,recid]);
 
   return (
     <div style={styles.chatWrapper}>

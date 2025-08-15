@@ -16,11 +16,11 @@ const RegisterNewUser = () => {
     password: '',
     confirmPassword: ''
   });
-  const {baseUrl}=useAppContext();
+  const { baseUrl } = useAppContext();
   const [otpForm, setOtpForm] = useState(false);
   const [isLoginPageOpen, setIsLoginPageOpen] = useState(false);
 
-        const navigate = useNavigate();
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -54,9 +54,9 @@ const RegisterNewUser = () => {
     else {
 
       try {
-     
 
-        const response = await axios.post(baseUrl+'register_new_user', {
+
+        const response = await axios.post(baseUrl + 'register_new_user', {
           name: formData.name,
           email: formData.email,
           phone: formData.phone,
@@ -68,9 +68,10 @@ const RegisterNewUser = () => {
         );
         console.log(response);
         if (response.data.Status) {
-          alert(response.data.Message);
           setOtpForm(true);
           navigate("/otp_verify");
+          alert(response.data.Message);
+
           clearFormData();
 
         }
@@ -88,7 +89,7 @@ const RegisterNewUser = () => {
   const openLoginPage = () => {
 
     setIsLoginPageOpen(true);
-    navigate("/login");
+    navigate("/");
 
   }
 
@@ -98,7 +99,7 @@ const RegisterNewUser = () => {
 
       {!otpForm && !isLoginPageOpen && <div style={{ height: "315px", width: "400px", margin: 'auto', backgroundColor: 'gray', borderRadius: '12px' }}>
 
-        <form onSubmit={handleSubmit}  align="left" >
+        <form onSubmit={handleSubmit} align="left" >
           <label>Name:</label><br />
           <input name="name" value={formData.name} onChange={handleChange} required /><br />
 

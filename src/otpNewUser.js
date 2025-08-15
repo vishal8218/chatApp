@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import axios from 'axios'
-import OtpTimer from './resendOtp';
 import { useAppContext } from "./AppContext";
 import { useNavigate } from 'react-router-dom';
 
@@ -18,7 +17,7 @@ const OtpVerifyForRegistration = () => {
 
 
       alert(response.data);
-      navigate("/login");
+      navigate("/");
 
     } catch (error) {
       console.error('Error:', error);
@@ -39,7 +38,6 @@ const OtpVerifyForRegistration = () => {
           borderRadius: '10px'
         }} >Send</button>
       </form>
-      <OtpTimer />
     </div>
   )
 }
