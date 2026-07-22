@@ -2,22 +2,39 @@ import { useEffect, useState } from "react";
 import { useAppContext } from "./AppContext";
 import axios from "axios";
 
-const ChatHistory = ({ id, recid,name }) => {
+const ChatHistory = ({ id, recid, name }) => {
   const token = localStorage.getItem("token");
   const { baseUrl } = useAppContext();
   const [data, setData] = useState([]);
- 
+  const [senderName, setSenderName] = useState("vishal")
 
+  useEffect(() => {
+    const getSenderName = async () => {
+      try {
+        const response = await axios.post(
+          baseUrl + "get_sender_name",
+          {
+            senderId: recid
+          },
+          { headers: { Authorization: token } }
+        );
+        setSenderName(response.data)
+      } catch (error) {
+        console.log(error);
+      }
+    }
+    getSenderName();
+  }, [])
   useEffect(() => {
     const getMessages = async () => {
       try {
         const response = await axios.post(
           baseUrl + "get_messages",
-          { 
-            reciverId:id,
+          {
+            reciverId: id,
 
-            senderId:recid
-           },
+            senderId: recid
+          },
           { headers: { Authorization: token } }
         );
 
@@ -38,7 +55,7 @@ const ChatHistory = ({ id, recid,name }) => {
     };
 
     getMessages();
-  }, [baseUrl, id, token,recid]);
+  }, [baseUrl, id, token, recid]);
 
   return (
     <div style={styles.chatWrapper}>
@@ -55,7 +72,22 @@ const ChatHistory = ({ id, recid,name }) => {
                   <strong>{msg.messageContent}</strong>
                   <br />
                   <small>
-                    {msg.date} {msg.time}
+                    <small>
+                      {msg.date} {msg.time}{" "}
+                       <span
+    style={{
+      color: "white",
+      backgroundColor: msg.senderId === recid ? "#28a745" : "gray",
+      padding: "2px 6px",
+      borderRadius: "8px",
+      fontSize: "12px",
+      fontWeight: "bold",
+    }}
+  >
+    {msg.senderId === recid ? "You" : name}
+  </span>
+                    </small>
+
                   </small>
                 </div>
               </div>

@@ -13,7 +13,7 @@ const LoginForm = () => {
     userEmailId: '',
     password: ''
   });
-    const navigate = useNavigate();
+  const navigate = useNavigate();
 
   const { baseUrl } = useAppContext();
   const [openHomePage, setOpenHomePage] = useState(false);
@@ -21,7 +21,7 @@ const LoginForm = () => {
   const [forgotPasswordPage, setForgotPassword] = useState(false);
   const openRegisterPage = (e) => {
     setOpenRegisterform(true);
-        navigate('/register');
+    navigate('/register');
 
   }
   // Handle input change
@@ -56,7 +56,7 @@ const LoginForm = () => {
     }
     else {
       try {
-        const response = await axios.post(baseUrl+'loginwithemail', {
+        const response = await axios.post(baseUrl + 'loginwithemail', {
 
           userEmailId: formData.userEmailId,
           password: formData.password
@@ -70,14 +70,18 @@ const LoginForm = () => {
         if (response.data.Status) {
           setOpenHomePage(true);
 
-          navigate("/home_page",{ state: { userEmailId:formData.userEmailId } });
-              localStorage.setItem("token", response.data.token);
-              
-               // ✅ Store JWT
+          navigate("/home_page", { state: { userEmailId: formData.userEmailId } });
+          localStorage.setItem("token", response.data.token);
 
+          // ✅ Store JWT
+
+        }
+        else if (response.data === "") {
+          alert("Please Enter Correct Email & Password");
         }
         else {
           alert(response.data.Message);
+
         }
 
       } catch (error) {
@@ -93,7 +97,7 @@ const LoginForm = () => {
     <div align="center">
 
 
-      <div style={{ height: "130px", width: "400px",marginTop:'20px' ,backgroundColor: 'gray', borderRadius: '12px' }}>
+      <div style={{ height: "130px", width: "400px", marginTop: '20px', backgroundColor: 'gray', borderRadius: '12px' }}>
         {!openRegisterForm && !openHomePage && <form onSubmit={handleSubmit} align="left">
           <label>Email:</label><br />
           <input
@@ -128,7 +132,7 @@ const LoginForm = () => {
         <div>
 
           {openRegisterForm && <RegisterNewUser />}
-          
+
           {openHomePage && <HomePage />}
 
         </div>
