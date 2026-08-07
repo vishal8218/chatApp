@@ -1,18 +1,21 @@
 import axios from "axios";
-import { useState } from "react"
+import { useEffect, useState } from "react";
 import { useAppContext } from "./AppContext";
 import MessageSend from "./messageSend";
-import ChatHistory from "./ChatHistory";
-
 const SearchUser = ({ senderEmail }) => {
-  const [formData, setFormData] = useState({
-    friendEmail: '',
-    email: ''
-  });
+  const [formData, setFormData] = useState({ friendEmail: "", email: "" });
   const [openchatPage, setOpenChat] = useState(false);
-  const [openchathis,setOpenCH]=useState(false);
-  const[reciverName,setReciverName]=useState();
-  const[recid,setRecid]=useState();
+  const [reciverName, setReciverName] = useState();
+  const [reciverProfileUrl, setReciverProfileUrl] = useState("");
+  const [data, setData] = useState({});
+  const [reciverid, setReciverId] = useState();
+  const [senderid, setSenderId] = useState();
+
+  // ✅ NEW: unread count map
+  const [unreadCounts, setUnreadCounts] = useState({});
+
+  const token = localStorage.getItem("token");
+  const { baseUrl } = useAppContext();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -21,164 +24,231 @@ const SearchUser = ({ senderEmail }) => {
       [name]: value,
     }));
   };
-  const [data, setData] = useState({});
-  const [reciverid, setReciverId] = useState();
-  const [senderid, setSenderId] = useState();
-  const[id,setId]=useState();
-  const token = localStorage.getItem("token"); // or wherever you store it
-
-  const { baseUrl } = useAppContext();
-  const[name,setName]=useState();
 
 
   const searchUser = async () => {
-    try {
-      const response = await axios.post(
-        baseUrl + "add_friend",
-        {
-          friendEmail: formData.friendEmail,
-          email: senderEmail,
-        },
-        {
-          headers: {
-            Authorization: token,
-            "Content-Type": "application/json"
-          }
-        })
-      alert(response.data.Message);
-    }
-    catch (error) {
-      alert("User not exit's");
+    if (formData.friendEmail === senderEmail) {
+      alert("Please check email id");
+    } else if (formData.friendEmail.trim() === "") {
+      alert("Please Enter email-id");
+    } else {
+      try {
+        const response = await axios.post(
+          baseUrl + "add_friend",
+          { friendEmail: formData.friendEmail, email: senderEmail },
+          { headers: { Authorization: token, "Content-Type": "application/json" } }
+        );
+        alert(response.data.Message);
 
+      } catch (error) {
+        alert("User not exists");
+      }
+      setFormData("");
     }
+    // const response = await axios.post(
+    //   baseUrl + "get_friends?userEmail=" + senderEmail,
+    //   {},
+    //   { headers: { Authorization: token } }
+    // );
+    // setData(response.data);
 
-    setFormData("");
-  }
+  };
+
   const getFriends = async () => {
-    const response = await axios.post(baseUrl + 'get_friends?userEmail=' + senderEmail,
-      {}, // empty body
-      {
-        headers: {
-          Authorization: token
+    try {
+      // Get the logged-in user's own ID so we can exclude them from the list
+      const senderRes = await axios.post(
+        baseUrl + "get_senderId",
+        { email: senderEmail },
+        { headers: { Authorization: token } }
+      );
+      const myUserId = senderRes.data.UserId;
+      setSenderId(myUserId);
+
+      const response = await axios.post(
+        baseUrl + "get_friends?userEmail=" + senderEmail,
+        {},
+        { headers: { Authorization: token } }
+      );
+      console.log(response.data);
+      if (response.data.Status === "False") {
+        setData({});
+      } else {
+        // Remove the logged-in user's own entry if present
+        const filtered = { ...response.data };
+        if (myUserId && filtered[myUserId]) {
+          delete filtered[myUserId];
         }
+        setData(filtered);
       }
+    } catch (err) {
+      console.error("Error fetching friends:", err);
+    }
+  };
 
+  const openchatpage = async (key, value) => {
+    if (openchatPage && String(reciverid) === String(key)) {
+      setOpenChat(false);
+      return;
+    }
 
-
+    const response = await axios.post(
+      baseUrl + "get_senderId",
+      { email: senderEmail },
+      { headers: { Authorization: token } }
     );
+    setOpenChat(true);
 
-
-    setData(response.data);
-
-
-  }
-  const openchatpage = async (key,value) => {
-
-    const response = await axios.post(baseUrl + "get_senderId"
-      ,
-      {
-        email: senderEmail
-      },
-      {
-        headers:
-        {
-          Authorization: token
-        }
-      }
-
-    )
     setSenderId(response.data.UserId);
     setReciverId(key);
-    setReciverName(value);
-    if(openchatPage)
-    {
-     setOpenChat(false);
-    }
-    setOpenChat(true)
+    // value is an object { name, userProfile } from the API
+    const contactName = value?.name || value || "User";
+    const contactProfile = value?.userProfile || "";
+    setReciverName(contactName);
+    setReciverProfileUrl(contactProfile);
+    setUnreadCounts((prev) => ({
+      ...prev,
+      [key]: 0
+    }));
+  };
 
 
-  }
-  const openchathistory =async(key,value)=>{
-    const response = await axios.post(baseUrl + "get_senderId"
-      ,
-      {
-        email: senderEmail
-      },
-      {
-        headers:
-        {
-          Authorization: token
+
+  // ======================================================
+  // ✅ NEW useEffect → fetch unread count
+  // ======================================================
+  useEffect(() => {
+    const fetchUnreadCounts = async () => {
+      try {
+        const senderRes = await axios.post(
+          baseUrl + "get_senderId",
+          { email: senderEmail },
+          { headers: { Authorization: token } }
+        );
+
+        const senderId = senderRes.data.UserId;
+
+        const counts = {};
+
+        for (const key of Object.keys(data)) {
+          const res = await axios.post(
+            baseUrl + "unread_count",
+            {
+              senderId: key,
+              reciverId: senderId,
+            },
+            {
+              headers: { Authorization: token },
+            }
+          );
+
+          counts[key] = res.data.UnReadCount || 0;
         }
+
+        setUnreadCounts(counts);
+      } catch (err) {
+        console.error("Unread count error", err);
       }
+    };
 
-    )
-    setId(key);
-    setRecid(response.data.UserId)
-    setName(value)
-    if(openchathis)
-    {
-        setOpenCH(false);
+    if (Object.keys(data).length > 0) {
+      fetchUnreadCounts();
     }
-    else
-    {
-    setOpenCH(true);
-    }
-  }
-
-
-
+  }, [data, senderEmail, baseUrl, token]);
 
   return (
-    <div align="center">
-      <div style={{ height: "100px", width: "250px", marginTop: '20px', backgroundColor: 'gray', borderRadius: '12px' }}>
+    <div className="chat-dashboard-container">
+      {/* Sidebar: contains Search card and Chats list */}
+      <div className={`chat-sidebar ${openchatPage ? "hidden-on-mobile" : ""}`}>
+        {/* Search Card */}
+        <div className="glass-card" style={{ border: "none", borderRadius: 0, boxShadow: "none", background: "transparent" }}>
+          <h3 className="text-center">Search User</h3>
+          <label className="form-label text-center">Enter Email ID</label>
+          <input
+            type="email"
+            name="friendEmail"
+            onChange={handleChange}
+            required
+            className="form-input"
+            placeholder="user@example.com"
+          />
+          <div className="btn-group">
+            <button onClick={searchUser} className="btn btn-primary" style={{ flex: 1 }}>
+              Find
+            </button>
+            <button onClick={getFriends} className="btn btn-secondary" style={{ flex: 1 }}>
+              See List
+            </button>
+          </div>
+        </div>
 
-        <label>Enter Email id</label><br />
-        <input
-          type="email"
-          name="friendEmail"
-          onChange={handleChange}
-          required>
-
-        </input>
-        <br />
-        <button className="btn btn-primary" onClick={searchUser}> Find</button>
-        <button onClick={getFriends}>See List</button>
-
+        {/* Friends List */}
         {Object.keys(data).length > 0 && (
-          <table border="1" cellPadding="8" style={{
-            marginTop: "20px",
-            borderCollapse: "collapse",
-            backgroundColor: "black",
-            color: "white",
-            width: "130%"
-          }}>
-            <thead>
-              <tr>
-                <th style={{ border: "1px solid white" }}>Name</th>
-                <th style={{ border: "1px solid white" }}>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.entries(data).map(([key, value]) => (
-                <tr key={key}>
-                  <td style={{ border: "1px solid white" }}>{typeof value === "object" ? JSON.stringify(value) : value}  </td>
-                  <td style={{ border: "1px solid white", padding: "4px" }}>
-                    <button className="btn btn-primary" onClick={() => openchatpage(key,value)}>chat</button>
-                    <button className="btn btn-secondary" onClick={()=>openchathistory(key,value)} >Chat History</button>
+          <div style={{ display: "flex", flexDirection: "column", borderTop: "1px solid var(--glass-border)" }}>
+            <div style={{ padding: "20px 20px 10px", fontSize: "1.1rem", fontWeight: "600", color: "var(--primary-color)" }}>Chats</div>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {Object.entries(data).map(([key, value], index) => {
+                // value is { name, userProfile } object from API
+                const contactName = value?.name || value || "User";
+                const contactProfile = value?.userProfile || "";
+                return (
+                  <div
+                    key={key}
+                    className="contact-row"
+                    style={{ display: "flex", alignItems: "center", padding: "10px 20px 0 20px", cursor: "pointer", background: openchatPage && String(reciverid) === String(key) ? "var(--glass-border)" : "transparent" }}
+                    onClick={() => openchatpage(key, value)}
+                  >
+                    <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "#dfe5e7", marginRight: "15px", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0, marginBottom: "10px" }}>
+                      {contactProfile ? (
+                        <img
+                          src={contactProfile}
+                          alt={contactName}
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          onError={(e) => { e.target.onerror = null; e.target.style.display = "none"; e.target.nextSibling && (e.target.nextSibling.style.display = "block"); }}
+                        />
+                      ) : null}
+                      <span style={{ fontSize: "28px", color: "#fff", display: contactProfile ? "none" : "block" }}>👤</span>
+                    </div>
+                    <div style={{ flex: 1, borderBottom: index < Object.keys(data).length - 1 ? "1px solid var(--glass-border)" : "none", paddingBottom: "15px", paddingTop: "5px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <div style={{ fontWeight: "500", fontSize: "1.05rem", color: "var(--text-main)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "200px" }}>{contactName}</div>
 
-
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                      <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", minWidth: "24px" }}>
+                        {unreadCounts[key] > 0 && !(openchatPage && String(reciverid) === String(key)) && (
+                          <span style={{ background: "var(--primary-color)", color: "var(--secondary-color)", borderRadius: "10px", padding: "2px 6px", fontSize: "11px", fontWeight: "bold" }}>
+                            {unreadCounts[key]}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         )}
       </div>
-      {openchatPage && <MessageSend senderid={senderid} reciverid={reciverid} name={reciverName} />}
-      {openchathis && <ChatHistory id={id} recid={recid} name={name} />}
-    </div>
-  )
 
-}
+      {/* Main Conversation Pane */}
+      <div className={`chat-conversation-area ${!openchatPage ? "hidden-on-mobile" : ""}`}>
+        {openchatPage ? (
+          <MessageSend
+            senderid={senderid}
+            reciverid={reciverid}
+            name={reciverName}
+            profileUrl={reciverProfileUrl}
+            onClose={() => setOpenChat(false)}
+          />
+        ) : (
+          <div className="no-chat-selected">
+            <div>
+              <span style={{ fontSize: "64px", display: "block", marginBottom: "15px" }}>💬</span>
+              Select a chat to start messaging
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export default SearchUser;

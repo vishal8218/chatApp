@@ -1,9 +1,10 @@
 import axios from 'axios';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import OtpVerifyForRegistration from './otpNewUser';
 import LoginForm from './login';
 import { useAppContext } from "./AppContext";
 import { useNavigate } from 'react-router-dom';
+import { FaDownload } from 'react-icons/fa';
 
 const RegisterNewUser = () => {
   const [formData, setFormData] = useState({
@@ -18,7 +19,44 @@ const RegisterNewUser = () => {
   const { baseUrl } = useAppContext();
   const [otpForm, setOtpForm] = useState(false);
   const [isLoginPageOpen, setIsLoginPageOpen] = useState(false);
-  const [isRegister,setIsRegister]=useState(false);
+  const [isRegister, setIsRegister] = useState(false);
+
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstallBtn, setShowInstallBtn] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallBtn(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    const handleAppInstalled = () => {
+      setShowInstallBtn(false);
+      setDeferredPrompt(null);
+    };
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setShowInstallBtn(false);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`User response to install prompt: ${outcome}`);
+    setDeferredPrompt(null);
+    setShowInstallBtn(false);
+  };
 
   const navigate = useNavigate();
 
@@ -70,7 +108,7 @@ const RegisterNewUser = () => {
       alert("Passwords do not match");
       return;
     }
-    
+
 
     if (
       formData.name === '' ||
@@ -82,18 +120,15 @@ const RegisterNewUser = () => {
       alert("Please Enter All required fields");
       return;
     }
-    if(formData.password.length<4)
-    {
+    if (formData.password.length < 4) {
       alert("Password must be greater than or equals to four character");
       return;
     }
-    if(formData.phone.length<10 )
-    {
+    if (formData.phone.length < 10) {
       alert("Phone No must be greater than 9 digit");
       return;
     }
-     if(formData.phone.length>10 )
-    {
+    if (formData.phone.length > 10) {
       alert("Phone no should be 10 digit");
       return;
     }
@@ -108,7 +143,7 @@ const RegisterNewUser = () => {
       // ✅ Step 2: Add location to payload
       const payload = {
         name: formData.name,
-        email: formData.email.toLocaleLowerCase(),
+        email: formData.email.toLowerCase(),
         phone: formData.phone,
         password: formData.password,
         latitude: location.latitude,
@@ -127,12 +162,12 @@ const RegisterNewUser = () => {
         setOtpForm(true);
         navigate("/otp_verify");
         alert("Otp send to your email");
-       // ✅ Store JWT
+        // ✅ Store JWT
 
         clearFormData();
-          setIsRegister(true);
-        localStorage.setItem("isRegister", isRegister);
-        
+        setIsRegister(true);
+        // localStorage.setItem("isRegister", isRegister);
+
 
       } else {
         alert(response.data.Message);
@@ -149,138 +184,114 @@ const RegisterNewUser = () => {
   };
 
   return (
-    <div style={{
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      marginTop: "50px",
-      fontFamily: "Arial, sans-serif"
-    }}>
+    <div className="glass-container">
       {!otpForm && !isLoginPageOpen && (
-        <h2 style={{ marginBottom: "20px", color: "#333" }}>Register</h2>
-      )}
-
-      {!otpForm && !isLoginPageOpen && (
-        <div style={{
-          width: "400px",
-          padding: "20px",
-          backgroundColor: "#f5f5f5",
-          borderRadius: "12px",
-          boxShadow: "0 4px 8px rgba(0,0,0,0.2)"
-        }}>
-          <form onSubmit={handleSubmit} style={{ textAlign: "left" }}>
-            <label style={{ fontWeight: "bold" }}>Name:</label><br />
-            <input
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              required
+        <div className="glass-card" style={{ position: "relative" }}>
+          {showInstallBtn && (
+            <button
+              onClick={handleInstallClick}
+              title="Download App"
               style={{
-                width: "100%",
-                padding: "10px",
-                marginTop: "5px",
-                marginBottom: "15px",
-                borderRadius: "8px",
-                border: "1px solid #ccc"
+                position: "absolute",
+                top: "20px",
+                right: "20px",
+                background: "rgba(0, 168, 132, 0.15)",
+                border: "1px solid var(--primary-color)",
+                color: "var(--primary-color)",
+                width: "36px",
+                height: "36px",
+                borderRadius: "50%",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 10,
+                transition: "all 0.2s ease",
+                outline: "none"
               }}
-            /><br />
-
-            <label style={{ fontWeight: "bold" }}>Email:</label><br />
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              style={{
-                width: "100%",
-                padding: "10px",
-                marginTop: "5px",
-                marginBottom: "15px",
-                borderRadius: "8px",
-                border: "1px solid #ccc"
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = "var(--primary-color)";
+                e.currentTarget.style.color = "#ffffff";
               }}
-            /><br />
-
-            <label style={{ fontWeight: "bold" }}>Phone:</label><br />
-            <input
-              type="tel"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              required
-              style={{
-                width: "100%",
-                padding: "10px",
-                marginTop: "5px",
-                marginBottom: "15px",
-                borderRadius: "8px",
-                border: "1px solid #ccc"
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = "rgba(0, 168, 132, 0.15)";
+                e.currentTarget.style.color = "var(--primary-color)";
               }}
-            /><br />
+            >
+              <FaDownload size={16} />
+            </button>
+          )}
+          <h2>Register</h2>
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label className="form-label">Name</label>
+              <input
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                required
+                className="form-input"
+                placeholder="Enter your name"
+              />
+            </div>
 
-            <label style={{ fontWeight: "bold" }}>Password:</label><br />
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              style={{
-                width: "100%",
-                padding: "10px",
-                marginTop: "5px",
-                marginBottom: "15px",
-                borderRadius: "8px",
-                border: "1px solid #ccc"
-              }}
-            /><br />
+            <div className="form-group">
+              <label className="form-label">Email</label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+                className="form-input"
+                placeholder="Enter your email"
+              />
+            </div>
 
-            <label style={{ fontWeight: "bold" }}>Confirm Password:</label><br />
-            <input
-              type="password"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              required
-              style={{
-                width: "100%",
-                padding: "10px",
-                marginTop: "5px",
-                marginBottom: "20px",
-                borderRadius: "8px",
-                border: "1px solid #ccc"
-              }}
-            /><br />
+            <div className="form-group">
+              <label className="form-label">Phone</label>
+              <input
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                required
+                className="form-input"
+                placeholder="Enter your phone"
+              />
+            </div>
 
-            <div style={{ textAlign: "center" }}>
-              <button
-                type="submit"
-                style={{
-                  backgroundColor: '#4CAF50',
-                  color: 'white',
-                  padding: '10px 20px',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  marginRight: '10px'
-                }}
-              >
+            <div className="form-group">
+              <label className="form-label">Password</label>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                className="form-input"
+                placeholder="Enter password"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Confirm Password</label>
+              <input
+                type="password"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                required
+                className="form-input"
+                placeholder="Confirm password"
+              />
+            </div>
+
+            <div className="btn-group">
+              <button type="submit" className="btn btn-primary">
                 Register
               </button>
-
-              <button
-                type="button"
-                onClick={openLoginPage}
-                style={{
-                  backgroundColor: '#2196F3',
-                  color: 'white',
-                  padding: '10px 20px',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer'
-                }}
-              >
+              <button type="button" onClick={openLoginPage} className="btn btn-secondary">
                 Login
               </button>
             </div>

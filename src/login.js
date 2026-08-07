@@ -1,12 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import RegisterNewUser from './register';
 import HomePage from './homePage';
-import ForgotPassword from './ForgotPassword';
 import { useAppContext } from "./AppContext";
 import { useNavigate } from 'react-router-dom';
-
-
+import { FaDownload } from 'react-icons/fa';
 
 const LoginForm = () => {
   const [formData, setFormData] = useState({
@@ -18,12 +16,49 @@ const LoginForm = () => {
   const { baseUrl } = useAppContext();
   const [openHomePage, setOpenHomePage] = useState(false);
   const [openRegisterForm, setOpenRegisterform] = useState(false);
-  const [forgotPasswordPage, setForgotPassword] = useState(false);
-  const openRegisterPage = (e) => {
+
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstallBtn, setShowInstallBtn] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallBtn(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    const handleAppInstalled = () => {
+      setShowInstallBtn(false);
+      setDeferredPrompt(null);
+    };
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setShowInstallBtn(false);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`User response to install prompt: ${outcome}`);
+    setDeferredPrompt(null);
+    setShowInstallBtn(false);
+  };
+
+  const openRegisterPage = () => {
     setOpenRegisterform(true);
     navigate('/register');
+  };
 
-  }
   // Handle input change
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -33,114 +68,135 @@ const LoginForm = () => {
     }));
   };
 
-
-
-
-
-
-
-
   // Handle form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-
     if (formData.userEmailId === '' && formData.password === '') {
       alert("Please Enter email and password");
-    }
-    else if (formData.userEmailId === '') {
+    } else if (formData.userEmailId === '') {
       alert("Please Enter a email");
-    }
-    else if (formData.password === '') {
+    } else if (formData.password === '') {
       alert("Please Enter a password");
-    }
-    else {
+    } else {
       try {
         const response = await axios.post(baseUrl + 'loginwithemail', {
-
-          userEmailId: formData.userEmailId,
+          userEmailId: formData.userEmailId.toLowerCase(),
           password: formData.password
-
-
-        }
-        );
-
-
-
+        });
+        console.log(response)
         if (response.data.Status) {
           setOpenHomePage(true);
-
           navigate("/home_page", { state: { userEmailId: formData.userEmailId } });
           localStorage.setItem("token", response.data.token);
+          localStorage.setItem("profileUrl", response.data.Profile_Url)
+        } else if (!response.data.Status) {
+          console.log(response)
 
-          // ✅ Store JWT
-
-        }
-        else if (response.data === "") {
           alert("Please Enter Correct Email & Password");
         }
-        else {
-          alert(response.data.Message);
-
-        }
-
       } catch (error) {
-        console.error('Login Failed:', error);
 
+        alert("Please Enter Correct Email & Password");
+
+        console.error('Login Failed:', error);
       }
     }
   };
+
   const openForgotPass = () => {
-    setForgotPassword(true);
-  }
+    navigate('/forgot_password');
+  };
+
   return (
-    <div align="center">
+    <div className="glass-container">
+      <div className="glass-card" style={{ position: "relative" }}>
+        {!openRegisterForm && !openHomePage && (
+          <>
+            {showInstallBtn && (
+              <button
+                onClick={handleInstallClick}
+                title="Download App"
+                style={{
+                  position: "absolute",
+                  top: "20px",
+                  right: "20px",
+                  background: "rgba(0, 168, 132, 0.15)",
+                  border: "1px solid var(--primary-color)",
+                  color: "var(--primary-color)",
+                  width: "36px",
+                  height: "36px",
+                  borderRadius: "50%",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  zIndex: 10,
+                  transition: "all 0.2s ease",
+                  outline: "none"
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = "var(--primary-color)";
+                  e.currentTarget.style.color = "#ffffff";
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = "rgba(0, 168, 132, 0.15)";
+                  e.currentTarget.style.color = "var(--primary-color)";
+                }}
+              >
+                <FaDownload size={16} />
+              </button>
+            )}
+            <h2>Login</h2>
+            <form onSubmit={handleSubmit}>
+              <div className="form-group">
+                <label className="form-label">Email</label>
+                <input
+                  type="email"
+                  name="userEmailId"
+                  value={formData.userEmailId}
+                  onChange={handleChange}
+                  required
+                  className="form-input"
+                  placeholder="Enter your email"
+                />
+              </div>
 
+              <div className="form-group">
+                <label className="form-label">Password</label>
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  className="form-input"
+                  placeholder="Enter your password"
+                />
+              </div>
 
-      <div style={{ height: "130px", width: "400px", marginTop: '20px', backgroundColor: 'gray', borderRadius: '12px' }}>
-        {!openRegisterForm && !openHomePage && <form onSubmit={handleSubmit} align="left">
-          <label>Email:</label><br />
-          <input
-            type="email"
-            name="userEmailId"
-            value={formData.userEmailId}
-            onChange={handleChange}
-            required
-          /><br />
+              <div className="btn-group">
+                <button type="submit" className="btn btn-primary">
+                  Login
+                </button>
+                <button type="button" onClick={openRegisterPage} className="btn btn-secondary">
+                  Register
+                </button>
+              </div>
+              <div className="mt-3 text-center">
+                <button type="button" onClick={openForgotPass} className="btn-link">
+                  Forgot Password?
+                </button>
+              </div>
+            </form>
+          </>
+        )}
 
-          <label>Password:</label><br />
-          <input
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-          />
-          <br /><br />
-
-          <div align="center">
-            <br />
-            <button type="submit" style={{
-
-              backgroundColor: 'skyblue',
-              borderRadius: '10px'
-            }}
-            >Login</button> <button onClick={openRegisterPage}   >Register</button>
-          </div>
-
-        </form>}
         <div>
-
           {openRegisterForm && <RegisterNewUser />}
-
           {openHomePage && <HomePage />}
-
         </div>
       </div>
-      <br /><br />
-      <div>
-      </div>
-      {forgotPasswordPage && <ForgotPassword />}
 
     </div>
   );

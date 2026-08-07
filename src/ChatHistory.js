@@ -6,39 +6,32 @@ const ChatHistory = ({ id, recid, name }) => {
   const token = localStorage.getItem("token");
   const { baseUrl } = useAppContext();
   const [data, setData] = useState([]);
-  const [senderName, setSenderName] = useState("vishal")
+
 
   useEffect(() => {
     const getSenderName = async () => {
       try {
-        const response = await axios.post(
+        await axios.post(
           baseUrl + "get_sender_name",
-          {
-            senderId: recid
-          },
+          { senderId: recid },
           { headers: { Authorization: token } }
         );
-        setSenderName(response.data)
       } catch (error) {
         console.log(error);
       }
-    }
+    };
     getSenderName();
-  }, [])
+  }, [baseUrl, recid, token]);
+
   useEffect(() => {
     const getMessages = async () => {
       try {
         const response = await axios.post(
           baseUrl + "get_messages",
-          {
-            reciverId: id,
-
-            senderId: recid
-          },
+          { reciverId: id, senderId: recid },
           { headers: { Authorization: token } }
         );
 
-        // Transform array of arrays into array of objects
         const cleanedData = Object.values(response.data).map((msgArr) => {
           const msgObj = {};
           msgArr.forEach((item) => {
@@ -48,7 +41,9 @@ const ChatHistory = ({ id, recid, name }) => {
           return msgObj;
         });
 
+
         setData(cleanedData);
+
       } catch (error) {
         console.error("Error fetching messages:", error);
       }
@@ -58,95 +53,68 @@ const ChatHistory = ({ id, recid, name }) => {
   }, [baseUrl, id, token, recid]);
 
   return (
-    <div style={styles.chatWrapper}>
-      <div style={styles.container}>
-        <div style={styles.chatHeader}>
-          <h5 style={{ margin: 0 }}>{name}</h5>
+    <div style={{ position: "fixed", bottom: "20px", left: "20px", zIndex: 9999 }}>
+      <div className="glass-card" style={{ width: "calc(100vw - 40px)", maxWidth: "320px", height: "450px", maxHeight: "calc(100vh - 100px)", display: "flex", flexDirection: "column", padding: "0", background: "var(--bg-main)", border: "1px solid var(--glass-border)" }}>
+        {/* HEADER */}
+        <div style={{ padding: "10px 16px", background: "var(--glass-bg)", color: "var(--text-main)", display: "flex", alignItems: "center", borderBottom: "1px solid var(--glass-border)", zIndex: 2 }}>
+          <div style={{width: "40px", height: "40px", borderRadius: "50%", background: "#dfe5e7", marginRight: "15px", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden"}}>
+            <span style={{fontSize: "24px", color: "#fff"}}>👤</span>
+          </div>
+          <h3 style={{ margin: 0, fontSize: "1.05rem", fontWeight: "500" }}>{name}</h3>
         </div>
 
-        <div style={styles.chatBox}>
+        {/* CHAT BOX */}
+        <div className="whatsapp-bg" style={{ flex: 1, padding: "20px 5%", overflowY: "auto", display: "flex", flexDirection: "column", gap: "2px" }}>
           {data.length > 0 ? (
-            data.map((msg, index) => (
-              <div key={index} style={styles.messageWrapper}>
-                <div style={styles.messageBubble}>
-                  <strong>{msg.messageContent}</strong>
-                  <br />
-                  <small>
-                    <small>
-                      {msg.date} {msg.time}{" "}
-                       <span
-    style={{
-      color: "white",
-      backgroundColor: msg.senderId === recid ? "#28a745" : "gray",
-      padding: "2px 6px",
-      borderRadius: "8px",
-      fontSize: "12px",
-      fontWeight: "bold",
-    }}
-  >
-    {msg.senderId === recid ? "You" : name}
-  </span>
-                    </small>
-
-                  </small>
+            data.map((msg, index) => {
+              const isSender = msg.senderId === recid;
+              const isFirstInGroup = index === 0 || data[index - 1].senderId !== msg.senderId;
+              return (
+                <div
+                  key={index}
+                  style={{
+                    display: "flex",
+                    justifyContent: isSender ? "flex-end" : "flex-start",
+                    marginBottom: isFirstInGroup && index !== 0 ? "10px" : "2px",
+                  }}
+                >
+                  <div
+                    style={{
+                      padding: "6px 7px 8px 9px",
+                      borderRadius: "7.5px",
+                      borderTopRightRadius: isSender && isFirstInGroup ? "0px" : "7.5px",
+                      borderTopLeftRadius: !isSender && isFirstInGroup ? "0px" : "7.5px",
+                      maxWidth: "65%",
+                      fontSize: "0.93rem",
+                      background: isSender ? "var(--message-sent)" : "var(--message-received)",
+                      color: "var(--text-main)",
+                      boxShadow: "0 1px 0.5px rgba(11,20,26,.13)",
+                      position: "relative",
+                      wordBreak: "break-word",
+                      lineHeight: "1.4"
+                    }}
+                  >
+                    <div style={{ paddingRight: "45px", paddingBottom: "10px" }}>
+                      {msg.messageContent}
+                    </div>
+                    <div style={{ position: "absolute", bottom: "4px", right: "6px", display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "var(--text-light)" }}>
+                      <span>
+                        {msg.time}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           ) : (
-            <p style={{ textAlign: "center", color: "#777" }}>No messages found</p>
+            <p style={{ textAlign: "center", color: "#777", marginTop: "20px" }}>
+              No messages found
+            </p>
           )}
         </div>
       </div>
     </div>
   );
-};
-
-const styles = {
-  chatWrapper: {
-    position: "fixed",
-    bottom: "20px",
-    left: "20px",
-    zIndex: 9999,
-  },
-  container: {
-    width: "300px",
-    height: "400px",
-    display: "flex",
-    flexDirection: "column",
-    border: "1px solid #ccc",
-    borderRadius: "10px",
-    overflow: "hidden",
-    backgroundColor: "white",
-    boxShadow: "0px 4px 8px rgba(0,0,0,0.2)",
-    fontFamily: "Arial, sans-serif",
-  },
-  chatHeader: {
-    padding: "10px",
-    backgroundColor: "#007bff",
-    color: "white",
-    fontWeight: "bold",
-  },
-  chatBox: {
-    flex: 1,
-    padding: "10px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px",
-    overflowY: "auto",
-    backgroundColor: "#f9f9f9",
-  },
-  messageWrapper: {
-    display: "flex",
-    justifyContent: "flex-start", // LEFT alignment
-  },
-  messageBubble: {
-    padding: "8px 12px",
-    borderRadius: "15px",
-    backgroundColor: "#e0e0e0",
-    maxWidth: "80%",
-    textAlign: "left",
-    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-  },
 };
 
 export default ChatHistory;
