@@ -1,9 +1,10 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { FaUserCircle } from "react-icons/fa";
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import SearchUser from "./searchUser";
 import axios from "axios";
 import { useAppContext } from "./AppContext";
+import useBadge from "./useBadge";
 
 const HomePage = () => {
   const location = useLocation();
@@ -16,6 +17,10 @@ const HomePage = () => {
   const [openUSP, setOpenUSP] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [showOtpForm, setShowOtpForm] = useState(false);
+  // Read cached count immediately so badge shows as soon as the app opens
+  const [totalUnreadUsers, setTotalUnreadUsers] = useState(() => {
+    return parseInt(localStorage.getItem("unreadUserCount") || "0", 10);
+  });
 
   const [emailInput, setEmailInput] = useState("");
   const [otpInput, setOtpInput] = useState("");
@@ -28,6 +33,67 @@ const HomePage = () => {
   const fileInputRef = useRef(null);
 
   /* ===================== PROFILE PICTURE UPLOAD ===================== */
+  const handleUnreadCountChange = useCallback((count) => {
+    setTotalUnreadUsers(count);
+    localStorage.setItem("unreadUserCount", String(count));
+  }, []);
+
+  // 🔴 Set PWA app icon badge = number of users with unread messages
+  useBadge(totalUnreadUsers);
+
+  /* ===================== POLL UNREAD USER COUNT ===================== */
+  useEffect(() => {
+    if (!email || !token) return;
+
+    const pollUnreadUserCount = async () => {
+      try {
+        // 1. Get logged-in user's ID
+        const senderRes = await axios.post(
+          `${baseUrl}get_senderId`,
+          { email },
+          { headers: { Authorization: token } }
+        );
+        const myUserId = senderRes.data.UserId;
+        if (!myUserId) return;
+
+        // 2. Get friend list
+        const friendRes = await axios.post(
+          `${baseUrl}get_friends?userEmail=${email}`,
+          {},
+          { headers: { Authorization: token } }
+        );
+        if (friendRes.data.Status === "False") {
+          setTotalUnreadUsers(0);
+          return;
+        }
+        const friends = { ...friendRes.data };
+        if (friends[myUserId]) delete friends[myUserId];
+
+        // 3. Count how many friends have sent unread messages to me (user count, not message count)
+        let usersWithUnread = 0;
+        for (const friendId of Object.keys(friends)) {
+          const res = await axios.post(
+            `${baseUrl}unread_count`,
+            { senderId: friendId, reciverId: myUserId },
+            { headers: { Authorization: token } }
+          );
+          if ((res.data.UnReadCount || 0) > 0) {
+            usersWithUnread += 1;
+          }
+        }
+        setTotalUnreadUsers(usersWithUnread);
+        // Cache so the badge is instant on next app open
+        localStorage.setItem("unreadUserCount", String(usersWithUnread));
+      } catch (err) {
+        // Silently ignore polling errors
+      }
+    };
+
+    pollUnreadUserCount();
+    const intervalId = setInterval(pollUnreadUserCount, 5000);
+    return () => clearInterval(intervalId);
+  }, [email, token, baseUrl]);
+
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -94,14 +160,16 @@ const HomePage = () => {
         },
       }
     );
+    // Clear all cached data including badge count
+    localStorage.removeItem("unreadUserCount");
     if (localStorage.getItem("access_token") !== null) {
       localStorage.removeItem("token");
-      localStorage.removeItem("profileUrl")
+      localStorage.removeItem("profileUrl");
       navigate(-1);
 
     }
     localStorage.removeItem("token");
-    localStorage.removeItem("profileUrl")
+    localStorage.removeItem("profileUrl");
 
     navigate("/", { replace: true });
   };
@@ -168,8 +236,36 @@ const HomePage = () => {
         <button
           onClick={() => setOpenUSP(true)}
           className="btn btn-primary nav-btn"
+          style={{ position: "relative" }}
         >
           New Chat
+          {totalUnreadUsers > 0 && (
+            <span
+              style={{
+                position: "absolute",
+                top: "-8px",
+                right: "-8px",
+                background: "var(--danger-color)",
+                color: "white",
+                borderRadius: "50%",
+                minWidth: "20px",
+                height: "20px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "11px",
+                fontWeight: "bold",
+                boxShadow: "0 2px 8px rgba(241,92,109,0.6)",
+                animation: "pulseRing 2s infinite",
+                padding: "0 4px",
+                lineHeight: 1,
+                pointerEvents: "none",
+              }}
+              title={`${totalUnreadUsers} user${totalUnreadUsers > 1 ? 's' : ''} with unread messages`}
+            >
+              {totalUnreadUsers > 99 ? "99+" : totalUnreadUsers}
+            </span>
+          )}
         </button>
 
         <div
@@ -274,7 +370,7 @@ const HomePage = () => {
       {/* ===================== SEARCH USER ===================== */}
       {openUSP && (
         <div className="home-dashboard-wrapper">
-          <SearchUser senderEmail={email} />
+          <SearchUser senderEmail={email} onUnreadCountChange={handleUnreadCountChange} />
         </div>
       )}
 

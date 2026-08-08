@@ -1,8 +1,8 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAppContext } from "./AppContext";
 import MessageSend from "./messageSend";
-const SearchUser = ({ senderEmail }) => {
+const SearchUser = ({ senderEmail, onUnreadCountChange }) => {
   const [formData, setFormData] = useState({ friendEmail: "", email: "" });
   const [openchatPage, setOpenChat] = useState(false);
   const [reciverName, setReciverName] = useState();
@@ -106,55 +106,69 @@ const SearchUser = ({ senderEmail }) => {
     const contactProfile = value?.userProfile || "";
     setReciverName(contactName);
     setReciverProfileUrl(contactProfile);
-    setUnreadCounts((prev) => ({
-      ...prev,
-      [key]: 0
-    }));
+    // Immediately clear count for this contact and notify parent badge
+    setUnreadCounts((prev) => {
+      const updated = { ...prev, [key]: 0 };
+      if (onUnreadCountChange) {
+        const usersWithUnread = Object.values(updated).filter((c) => c > 0).length;
+        onUnreadCountChange(usersWithUnread);
+      }
+      return updated;
+    });
   };
 
 
 
+  // Cached sender ID so we don't re-fetch it on every poll tick
+  const senderIdRef = useRef(null);
+
   // ======================================================
-  // ✅ NEW useEffect → fetch unread count
+  // ✅ Poll unread counts every 5s for fast badge updates
   // ======================================================
   useEffect(() => {
+    if (Object.keys(data).length === 0) return;
+
     const fetchUnreadCounts = async () => {
       try {
-        const senderRes = await axios.post(
-          baseUrl + "get_senderId",
-          { email: senderEmail },
-          { headers: { Authorization: token } }
-        );
+        // Fetch senderId once, then cache it
+        if (!senderIdRef.current) {
+          const senderRes = await axios.post(
+            baseUrl + "get_senderId",
+            { email: senderEmail },
+            { headers: { Authorization: token } }
+          );
+          senderIdRef.current = senderRes.data.UserId;
+        }
 
-        const senderId = senderRes.data.UserId;
-
+        const senderId = senderIdRef.current;
         const counts = {};
 
         for (const key of Object.keys(data)) {
           const res = await axios.post(
             baseUrl + "unread_count",
-            {
-              senderId: key,
-              reciverId: senderId,
-            },
-            {
-              headers: { Authorization: token },
-            }
+            { senderId: key, reciverId: senderId },
+            { headers: { Authorization: token } }
           );
-
           counts[key] = res.data.UnReadCount || 0;
         }
 
         setUnreadCounts(counts);
+
+        // Notify parent: count of USERS (not messages) with unread > 0
+        if (onUnreadCountChange) {
+          const usersWithUnread = Object.values(counts).filter((c) => c > 0).length;
+          onUnreadCountChange(usersWithUnread);
+        }
       } catch (err) {
         console.error("Unread count error", err);
       }
     };
 
-    if (Object.keys(data).length > 0) {
-      fetchUnreadCounts();
-    }
-  }, [data, senderEmail, baseUrl, token]);
+    fetchUnreadCounts();
+    const intervalId = setInterval(fetchUnreadCounts, 5000);
+    return () => clearInterval(intervalId);
+  }, [data, senderEmail, baseUrl, token, onUnreadCountChange]);
+
 
   return (
     <div className="chat-dashboard-container">
