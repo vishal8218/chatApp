@@ -12,9 +12,7 @@ const RegisterNewUser = () => {
     email: '',
     phone: '',
     password: '',
-    confirmPassword: '',
-    latitude: '',
-    longitude: ''
+    confirmPassword: ''
   });
   const { baseUrl } = useAppContext();
   const [otpForm, setOtpForm] = useState(false);
@@ -74,30 +72,7 @@ const RegisterNewUser = () => {
       email: '',
       phone: '',
       password: '',
-      confirmPassword: '',
-      latitude: '',
-      longitude: ''
-    });
-  };
-
-  // ✅ Get location (with user permission)
-  const getLocation = () => {
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject("Geolocation is not supported by your browser.");
-      } else {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            resolve({
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-            });
-          },
-          (error) => {
-            reject("Location permission denied or unavailable.");
-          }
-        );
-      }
+      confirmPassword: ''
     });
   };
 
@@ -134,26 +109,14 @@ const RegisterNewUser = () => {
     }
 
     try {
-      // ✅ Step 1: Fetch user location before calling API
-      const location = await getLocation().catch((err) => {
-        console.warn(err);
-        return { latitude: null, longitude: null };
-      });
-
-      // ✅ Step 2: Add location to payload
       const payload = {
         name: formData.name,
         email: formData.email.toLowerCase(),
         phone: formData.phone,
         password: formData.password,
-        latitude: location.latitude,
-        longitude: location.longitude,
       };
 
-      console.log(location.latitude)
-      console.log(location.longitude)
-
-      // ✅ Step 3: Send to backend
+      // Send to backend
       const response = await axios.post(baseUrl + 'register_new_user', payload, {
         headers: { 'Content-Type': 'application/json' },
       });
