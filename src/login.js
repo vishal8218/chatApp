@@ -20,11 +20,17 @@ const LoginForm = () => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstallBtn, setShowInstallBtn] = useState(false);
 
+  // Track whether we are still checking auth — prevents login flash for logged-in users
+  const [authChecking, setAuthChecking] = useState(true);
+
   // If user already has a token, skip login and go straight to home
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
       navigate("/home_page");
+    } else {
+      // No token — safe to show the login form
+      setAuthChecking(false);
     }
   }, [navigate]);
 
@@ -115,6 +121,9 @@ const LoginForm = () => {
   const openForgotPass = () => {
     navigate('/forgot_password');
   };
+
+  // Don't render anything while we confirm the auth state
+  if (authChecking) return null;
 
   return (
     <div className="glass-container">
