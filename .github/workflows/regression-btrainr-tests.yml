@@ -1,24 +1,17 @@
-name: Run Automation Tests
+name: Trigger Automation Tests
 
 on:
-  repository_dispatch:
-    types: [chatApp-pushed]
+  push:
+    branches: [main]
 
 jobs:
-  test:
+  trigger:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout automation-framework
-        uses: actions/checkout@v4
-        with:
-          ref:  main  # your default branch is "master", not "main"
-
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'   # adjust to match your project
-          distribution: 'temurin'
-
-      - name: Run tests with Maven
-        run: mvn clean test
-        # or: run: ./gradlew test   (if using Gradle)
+      - name: Notify automation-framework
+        run: |
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/vishal8218/automation-framework/dispatches \
+            -d '{"event_type":"chatApp-pushed"}'
