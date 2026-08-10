@@ -151,25 +151,25 @@ const HomePage = () => {
 
   /* ===================== LOGOUT ===================== */
   const logout = async () => {
-    await axios.post(
-      `${baseUrl}logout`,
-      {},
-      {
-        headers: {
-          Authorization: token,
-        },
-      }
-    );
-    // Clear all cached data including badge count
-    localStorage.removeItem("unreadUserCount");
-    if (localStorage.getItem("access_token") !== null) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("profileUrl");
-      navigate(-1);
-
+    try {
+      await axios.post(
+        `${baseUrl}logout`,
+        {},
+        {
+          headers: {
+            Authorization: token,
+          },
+        }
+      );
+    } catch (err) {
+      // Proceed with local logout even if the server call fails
+      console.error("Logout API error:", err);
     }
+
+    // Clear all cached data
     localStorage.removeItem("token");
     localStorage.removeItem("profileUrl");
+    localStorage.removeItem("unreadUserCount");
 
     navigate("/", { replace: true });
   };
