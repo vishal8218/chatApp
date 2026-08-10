@@ -1,0 +1,24 @@
+name: Run Automation Tests
+
+on:
+  repository_dispatch:
+    types: [chatApp-pushed]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout automation-framework
+        uses: actions/checkout@v4
+        with:
+          ref:  main  # your default branch is "master", not "main"
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'   # adjust to match your project
+          distribution: 'temurin'
+
+      - name: Run tests with Maven
+        run: mvn clean test
+        # or: run: ./gradlew test   (if using Gradle)
