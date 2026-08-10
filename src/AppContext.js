@@ -4,7 +4,7 @@ import { createContext, useContext, useState } from "react";
 export const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
-  const [baseUrl, setBaseUrl] = useState("http://localhost:8448dajdc/");
+  const [baseUrl, setBaseUrl] = useState("http://localhost:8448dajdc/dsf");
 
   return (
     <AppContext.Provider value={{ baseUrl, setBaseUrl }}>
