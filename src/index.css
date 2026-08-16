@@ -479,7 +479,12 @@ code {
   }
 
   .navbar-user span {
-    display: none; /* Hide email on small screens to save space */
+    display: inline;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.75rem;
   }
 
   .nav-btn {
