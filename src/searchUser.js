@@ -165,7 +165,7 @@ const SearchUser = ({ senderEmail, onUnreadCountChange }) => {
     };
 
     fetchUnreadCounts();
-    const intervalId = setInterval(fetchUnreadCounts, 5000);
+    const intervalId = setInterval(fetchUnreadCounts, 15000);
     return () => clearInterval(intervalId);
   }, [data, senderEmail, baseUrl, token, onUnreadCountChange]);
 

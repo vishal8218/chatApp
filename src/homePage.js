@@ -10,7 +10,7 @@ const HomePage = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const email = location.state?.userEmailId;
+  const email = location.state?.userEmailId || localStorage.getItem("userEmail");
   const token = localStorage.getItem("token");
   const { baseUrl } = useAppContext();
 
@@ -90,7 +90,7 @@ const HomePage = () => {
     };
 
     pollUnreadUserCount();
-    const intervalId = setInterval(pollUnreadUserCount, 5000);
+    const intervalId = setInterval(pollUnreadUserCount, 15000);
     return () => clearInterval(intervalId);
   }, [email, token, baseUrl]);
 
@@ -170,6 +170,7 @@ const HomePage = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("profileUrl");
     localStorage.removeItem("unreadUserCount");
+    localStorage.removeItem("userEmail");
 
     navigate("/", { replace: true });
   };

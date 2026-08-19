@@ -103,7 +103,8 @@ const LoginForm = () => {
           setOpenHomePage(true);
           navigate("/home_page", { state: { userEmailId: formData.userEmailId } });
           localStorage.setItem("token", response.data.token);
-          localStorage.setItem("profileUrl", response.data.Profile_Url)
+          localStorage.setItem("profileUrl", response.data.Profile_Url);
+          localStorage.setItem("userEmail", formData.userEmailId.toLowerCase());
         } else if (!response.data.Status) {
           console.log(response)
 
