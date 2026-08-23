@@ -62,11 +62,12 @@ const HomePage = () => {
           {},
           { headers: { Authorization: token } }
         );
-        if (friendRes.data.Status === "False") {
+        if (friendRes.data.Status === "False" || friendRes.data.Status === false) {
           setTotalUnreadUsers(0);
           return;
         }
-        const friends = { ...friendRes.data };
+        const { Status: _s, Message: _m, ...friendContacts } = friendRes.data;
+        const friends = { ...friendContacts };
         if (friends[myUserId]) delete friends[myUserId];
 
         // 3. Count how many friends have sent unread messages to me (user count, not message count)

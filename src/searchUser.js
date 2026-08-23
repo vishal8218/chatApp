@@ -70,15 +70,23 @@ const SearchUser = ({ senderEmail, onUnreadCountChange }) => {
         {},
         { headers: { Authorization: token } }
       );
-      console.log(response.data);
-      if (response.data.Status === "False") {
+      console.log("get_friends raw response:", response.data);
+      // Strip ALL metadata/non-numeric keys — only keep numeric ID keys (actual contacts)
+      const rawData = response.data;
+      const isFailure = rawData.Status === "False" || rawData.Status === false;
+
+      if (isFailure) {
         setData({});
       } else {
-        // Remove the logged-in user's own entry if present
-        const filtered = { ...response.data };
-        if (myUserId && filtered[myUserId]) {
-          delete filtered[myUserId];
-        }
+        // Exclude known metadata keys; contact keys are UUIDs so we can't use isNaN
+        const METADATA_KEYS = new Set(["Status", "Message"]);
+        const filtered = {};
+        Object.entries(rawData).forEach(([k, v]) => {
+          if (!METADATA_KEYS.has(k) && k !== String(myUserId)) {
+            filtered[k] = v;
+          }
+        });
+        console.log("Filtered contacts:", filtered);
         setData(filtered);
       }
     } catch (err) {
@@ -202,9 +210,13 @@ const SearchUser = ({ senderEmail, onUnreadCountChange }) => {
             <div style={{ padding: "20px 20px 10px", fontSize: "1.1rem", fontWeight: "600", color: "var(--primary-color)" }}>Chats</div>
             <div style={{ display: "flex", flexDirection: "column" }}>
               {Object.entries(data).map(([key, value], index) => {
-                // value is { name, userProfile } object from API
-                const contactName = value?.name || value || "User";
-                const contactProfile = value?.userProfile || "";
+                // value may be a string (name) or object {name, userProfile}
+                const contactName = typeof value === "string"
+                  ? value
+                  : (typeof value === "object" && value !== null)
+                    ? (value.name || "User")
+                    : "User";
+                const contactProfile = (typeof value === "object" && value !== null) ? (value.userProfile || "") : "";
                 return (
                   <div
                     key={key}
