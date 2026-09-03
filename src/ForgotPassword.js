@@ -13,7 +13,7 @@ const ForgotPassword = () => {
     try {
       const userEmail=email.toLowerCase();
       const response = await axios.post(baseUrl + "forgot_password", { userEmail });
-      console.log(response);
+
       if (response.data === "OTP is send to your email") {
         alert("OTP is send to your email");
         setPageOtp(true);

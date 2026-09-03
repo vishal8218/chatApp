@@ -32,7 +32,7 @@ const UpdatePassword = () => {
         alert("Password Updated Successfully !!!");
         navigate("/");
       } catch (err) {
-        console.log(err);
+
         alert("Password not Updated");
       }
     } else {

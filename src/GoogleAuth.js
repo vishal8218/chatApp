@@ -14,7 +14,7 @@ const GoogleAuth = () => {
       // Google ID Token
       const googleToken = credentialResponse.credential;
 
-      console.log("Google Token:", googleToken);
+
 
       // Send token to backend
       const response = await axios.post(
@@ -39,7 +39,7 @@ const GoogleAuth = () => {
   };
 
   const handleError = () => {
-    console.log("Google Login Failed");
+
   };
 
   return (

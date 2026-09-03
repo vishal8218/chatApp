@@ -11,6 +11,8 @@ import { Client } from "@stomp/stompjs";
 
 const MessageSend = ({ senderid, reciverid, name, profileUrl, onClose }) => {
   const stompClient = useRef(null);
+  // Tracks whether WE just called sendIsChatOpen so we can ignore the backend echo
+  const selfSentIsChatOpenRef = useRef(false);
 
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -33,7 +35,7 @@ const MessageSend = ({ senderid, reciverid, name, profileUrl, onClose }) => {
           { headers: { Authorization: token } }
         );
 
-        console.log("📥 Raw History Data:", response.data);
+
 
         let cleanedData = [];
 
@@ -79,7 +81,7 @@ const MessageSend = ({ senderid, reciverid, name, profileUrl, onClose }) => {
           });
         }
 
-        console.log("🧹 Cleaned History Data:", cleanedData);
+
 
         const sortedMessages = cleanedData.sort((a, b) => {
           if (!a.date || !a.time || !b.date || !b.time) return 0;
@@ -98,7 +100,6 @@ const MessageSend = ({ senderid, reciverid, name, profileUrl, onClose }) => {
 
     fetchHistory();
 
-
   }, [senderid, reciverid, baseUrl, token]);
 
   // ✅ Connect WebSocket
@@ -116,25 +117,36 @@ const MessageSend = ({ senderid, reciverid, name, profileUrl, onClose }) => {
     }
   }, []);
   useEffect(() => {
-    if (senderid && reciverid) {
-      sendReadReceipt();
-      sendIsChatOpen();
-    }
-
-    // Adjust frontend to trigger read receipts when window comes back into focus
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible" && senderid && reciverid) {
-        sendReadReceipt();
-        sendIsChatOpen();
-      }
-    };
-
-    const handleFocus = () => {
+    // Only mark messages as read if the current user is the RECEIVER
+    // (i.e. there are messages sent by reciverid to senderid that need to be acknowledged).
+    // Do NOT fire these when the sender opens the chat — blue ticks must only
+    // appear on the sender's side after the receiver opens/reads the chat.
+    const markReadIfReceiver = () => {
       if (senderid && reciverid) {
-        sendReadReceipt();
-        sendIsChatOpen();
+        const hasUnreadFromOther = messages.some(
+          (m) => String(m.senderId) === String(reciverid) && !m.isRead
+        );
+        // sendReadReceipt  → persists isRead=true to DB
+        // sendIsChatOpen   → triggers real-time WebSocket push to sender A's
+        //                    /user/queue/read-receipt so blue ticks appear immediately.
+        //                    Safe to call here because:
+        //                    - hasUnreadFromOther ensures we only fire as the RECEIVER
+        //                    - the is_chat_open subscriber no longer sets isRead (no echo bug)
+        if (hasUnreadFromOther) {
+          sendReadReceipt();
+          sendIsChatOpen();
+        }
       }
     };
+
+    markReadIfReceiver();
+
+    // Also trigger when the window comes back into focus
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") markReadIfReceiver();
+    };
+
+    const handleFocus = () => markReadIfReceiver();
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("focus", handleFocus);
@@ -143,7 +155,7 @@ const MessageSend = ({ senderid, reciverid, name, profileUrl, onClose }) => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("focus", handleFocus);
     };
-  }, [senderid, reciverid]);
+  }, [senderid, reciverid, messages]);
 
   const sendReadReceipt = () => {
     if (!stompClient.current || !stompClient.current.connected) return;
@@ -160,13 +172,14 @@ const MessageSend = ({ senderid, reciverid, name, profileUrl, onClose }) => {
 
   const sendIsChatOpen = () => {
     if (!stompClient.current || !stompClient.current.connected) return;
-
+    // Mark that WE are the ones sending this, so we can ignore the backend echo
+    selfSentIsChatOpenRef.current = true;
     stompClient.current.publish({
       destination: "/app/is_chat_open",
       headers: { Authorization: token },
       body: JSON.stringify({
         senderId: reciverid,   // who sent messages
-        reciverId: senderid   // who sent messages
+        reciverId: senderid   // current user (reading those messages)
       }),
     });
   };
@@ -201,11 +214,12 @@ const MessageSend = ({ senderid, reciverid, name, profileUrl, onClose }) => {
       connectHeaders: { Authorization: token },
 
       onConnect: () => {
+        // NOTE: Do NOT call sendReadReceipt() or sendIsChatOpen() here.
+        // Unconditionally marking messages as read on connect causes blue ticks
+        // to appear on the sender's side before the receiver has read anything,
+        // and persists incorrectly in the DB across re-logins.
+        // Read receipts are sent only by the receiver via markReadIfReceiver().
 
-        if (senderid && reciverid) {
-          sendReadReceipt();
-          sendIsChatOpen();
-        }
 
         stompClient.current.subscribe("/user/queue/messages", (msg) => {
           const body = JSON.parse(msg.body);
@@ -243,7 +257,7 @@ const MessageSend = ({ senderid, reciverid, name, profileUrl, onClose }) => {
 
         stompClient.current.subscribe("/user/queue/read-receipt", (msg) => {
           const receipt = JSON.parse(msg.body);
-          console.log("📩 Received read-receipt:", receipt);
+
 
           const isMatchingReceipt =
             String(receipt.senderId) === String(senderid) &&
@@ -262,13 +276,21 @@ const MessageSend = ({ senderid, reciverid, name, profileUrl, onClose }) => {
 
         stompClient.current.subscribe("/user/queue/is_chat_open", (msg) => {
           const receipt = JSON.parse(msg.body);
-          console.log("📩 Received is_chat_open:", receipt);
+
+
+          // If we just sent sendIsChatOpen ourselves, this is the backend echo — ignore it once.
+          // Otherwise it is a genuine notification that receiver B has opened our chat.
+          if (selfSentIsChatOpenRef.current) {
+            selfSentIsChatOpenRef.current = false; // reset so next receipt from B is processed
+            return;
+          }
 
           const isMatchingReceipt =
             String(receipt.senderId) === String(senderid) &&
             String(receipt.reciverId) === String(reciverid);
 
           if (isMatchingReceipt) {
+            // Receiver B opened the chat and read A's messages — show blue ticks immediately
             setMessages((prev) =>
               prev.map((m) =>
                 String(m.senderId) === String(senderid)
@@ -326,7 +348,7 @@ const MessageSend = ({ senderid, reciverid, name, profileUrl, onClose }) => {
           }
         );
 
-        console.log("✅ File uploaded:", response.data);
+
 
         const isPdf = file.type === "application/pdf" || file.name.endsWith(".pdf");
 
@@ -396,7 +418,7 @@ const MessageSend = ({ senderid, reciverid, name, profileUrl, onClose }) => {
           }),
         });
 
-        console.log("✅ Edit event sent via WebSocket");
+
       }
 
 

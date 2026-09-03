@@ -19,7 +19,7 @@ const OtpTimer = () => {
   const resendOtp = () => {
     setSeconds(60);
     setCanResend(false);
-    console.log('OTP resent');
+
   };
 
   return (

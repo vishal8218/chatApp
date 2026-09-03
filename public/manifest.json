@@ -1,25 +1,33 @@
 {
+  "id": "/",
   "short_name": "ChatApp",
   "name": "Chat Application",
+  "description": "A real-time chat application",
   "icons": [
     {
       "src": "logo.svg",
       "sizes": "any",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     },
     {
       "src": "logo192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
       "src": "logo512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
   "theme_color": "#4f46e5",
-  "background_color": "#ffffff"
+  "background_color": "#0f172a",
+  "categories": ["social", "communication"]
 }

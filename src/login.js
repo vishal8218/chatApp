@@ -63,7 +63,7 @@ const LoginForm = () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    console.log(`User response to install prompt: ${outcome}`);
+
     setDeferredPrompt(null);
     setShowInstallBtn(false);
   };
@@ -98,7 +98,7 @@ const LoginForm = () => {
           userEmailId: formData.userEmailId.toLowerCase(),
           password: formData.password
         });
-        console.log(response)
+
         if (response.data.Status) {
           setOpenHomePage(true);
           navigate("/home_page", { state: { userEmailId: formData.userEmailId } });
@@ -106,7 +106,7 @@ const LoginForm = () => {
           localStorage.setItem("profileUrl", response.data.Profile_Url);
           localStorage.setItem("userEmail", formData.userEmailId.toLowerCase());
         } else if (!response.data.Status) {
-          console.log(response)
+
 
           alert("Please Enter Correct Email & Password");
         }

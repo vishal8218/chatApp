@@ -17,7 +17,7 @@ const ChatHistory = ({ id, recid, name }) => {
           { headers: { Authorization: token } }
         );
       } catch (error) {
-        console.log(error);
+
       }
     };
     getSenderName();
