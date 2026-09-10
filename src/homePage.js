@@ -298,7 +298,7 @@ const HomePage = () => {
         >
           {/* chat bubble icon */}
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
           New Chat
           {totalUnreadUsers > 0 && (
@@ -361,8 +361,8 @@ const HomePage = () => {
           <span className="na-user-email">{email}</span>
           {/* pencil icon to signal editable */}
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.4, flexShrink: 0 }}>
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
           </svg>
         </div>
 
@@ -379,10 +379,10 @@ const HomePage = () => {
           >
             {/* trash icon */}
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6l-1 14H6L5 6"/>
-              <path d="M10 11v6M14 11v6"/>
-              <path d="M9 6V4h6v2"/>
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6l-1 14H6L5 6" />
+              <path d="M10 11v6M14 11v6" />
+              <path d="M9 6V4h6v2" />
             </svg>
             <span>Delete</span>
           </button>
@@ -393,9 +393,9 @@ const HomePage = () => {
           >
             {/* logout arrow icon */}
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-              <polyline points="16 17 21 12 16 7"/>
-              <line x1="21" y1="12" x2="9" y2="12"/>
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
             </svg>
             <span>Logout</span>
           </button>
@@ -542,10 +542,10 @@ const HomePage = () => {
             <div className="da-icon-ring">
               <div className="da-icon-inner">
                 <svg viewBox="0 0 24 24" fill="none" className="da-trash-svg">
-                  <path d="M3 6h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  <path d="M8 6V4h8v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M19 6l-1 14H6L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M3 6h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  <path d="M8 6V4h8v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M19 6l-1 14H6L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                 </svg>
               </div>
             </div>
@@ -574,13 +574,12 @@ const HomePage = () => {
               <div className="da-input-wrapper">
                 <input
                   type="email"
-                  className={`da-input ${
-                    deleteConfirmEmail.length > 0
+                  className={`da-input ${deleteConfirmEmail.length > 0
                       ? deleteConfirmEmail.trim().toLowerCase() === email.toLowerCase()
                         ? "da-input--match"
                         : "da-input--mismatch"
                       : ""
-                  }`}
+                    }`}
                   placeholder="your@email.com"
                   value={deleteConfirmEmail}
                   onChange={(e) => {
@@ -592,11 +591,10 @@ const HomePage = () => {
                 />
                 {/* Live match indicator */}
                 {deleteConfirmEmail.length > 0 && (
-                  <span className={`da-input-status ${
-                    deleteConfirmEmail.trim().toLowerCase() === email.toLowerCase()
+                  <span className={`da-input-status ${deleteConfirmEmail.trim().toLowerCase() === email.toLowerCase()
                       ? "da-input-status--ok"
                       : "da-input-status--bad"
-                  }`}>
+                    }`}>
                     {deleteConfirmEmail.trim().toLowerCase() === email.toLowerCase() ? "✓" : "✗"}
                   </span>
                 )}
