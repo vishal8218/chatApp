@@ -106,14 +106,11 @@ const LoginForm = () => {
           localStorage.setItem("profileUrl", response.data.Profile_Url);
           localStorage.setItem("userEmail", formData.userEmailId.toLowerCase());
         } else if (!response.data.Status) {
-
-
-          alert("Please Enter Correct Email & Password");
+          alert(response.data.Message || "Please Enter Correct Email & Password");
         }
       } catch (error) {
-
-        alert("Please Enter Correct Email & Password");
-
+        const msg = error.response?.data?.Message || "Please Enter Correct Email & Password";
+        alert(msg);
         console.error('Login Failed:', error);
       }
     }
