@@ -678,6 +678,50 @@ code {
   .na-btn-install span {
     display: none;
   }
+
+  /* ── User chip: show avatar-only on mobile ── */
+  .na-user-chip {
+    padding: 4px;
+    gap: 0;
+    max-width: 44px;
+    min-width: 0;
+    flex-shrink: 0;
+    border-radius: 50%;
+    justify-content: center;
+  }
+
+  /* Hide email text and pencil icon inside the chip on mobile */
+  .na-user-email {
+    display: none;
+  }
+
+  .na-user-chip > svg {
+    display: none;
+  }
+
+  /* Slightly larger avatar for easier tap target */
+  .profile-pic-icon {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+  }
+
+  /* Action buttons: icon-only on mobile */
+  .na-btn-delete span,
+  .na-btn-logout span {
+    display: none;
+  }
+
+  .na-btn-delete,
+  .na-btn-logout {
+    padding: 8px 10px;
+    gap: 0;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    justify-content: center;
+    flex-shrink: 0;
+  }
 }
 
 /* homePage container wrapper */
